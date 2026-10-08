@@ -1,7 +1,7 @@
 GroomVision · Prototipo PWA
 
 Para publicarla gratis con GPS real y mapa real (necesita HTTPS):
-1. Crea un repositorio en GitHub (por ejemplo "groomvision") y sube TODOS los archivos de esta carpeta.
+1. Crea un repositorio en GitHub (por ejemplo "groomvision") y sube TODOS los archivos de esta carpeta (no hay subcarpetas).
 2. En el repositorio: Settings > Pages > Source: "Deploy from a branch" > rama main, carpeta / (root) > Save.
 3. Espera 1 o 2 minutos y abre https://TU-USUARIO.github.io/groomvision/ en el celular.
 4. En Chrome Android: menú ⋮ > "Agregar a la pantalla principal" / "Instalar app".
