@@ -1,0 +1,1377 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F172A">
+<meta name="description" content="Visor 3D de cortes caninos, carnet médico con alertas y directorio de veterinarias cercanas.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>GroomVision</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: app móvil de una columna; en pantallas anchas se enmarca como un teléfono centrado */
+:root {
+  --bg: #0F172A;
+  --surface: #1E293B;
+  --surface-2: #26344B;
+  --line: #334155;
+  --text: #F8FAFC;
+  --text-2: #CBD5E1;
+  --muted: #94A3B8;
+  --cobalt: #2563EB;
+  --cobalt-2: #60A5FA;
+  --coral: #F97316;
+  --coral-2: #FDBA74;
+  --mint: #0D9488;
+  --mint-2: #2DD4BF;
+  --danger: #FB7185;
+  --stage: #0A1020;
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { margin: 0; background: var(--stage); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--cobalt-2); outline-offset: 2px; }
+svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+.stage { height: 100%; display: grid; place-items: center; }
+.phone { position: relative; width: 100%; height: 100%; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
+@media (min-width: 560px) {
+  .stage { padding-block: 16px; padding-inline: 16px; background: radial-gradient(1200px 600px at 50% -10%, #16233F 0%, var(--stage) 60%); }
+  .phone { width: 412px; height: min(880px, 100%); border-radius: 34px; border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+}
+
+/* Cabecera */
+.topbar { display: flex; align-items: center; gap: 10px; padding: 12px 16px 10px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+.brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.brand img { width: 34px; height: 38px; object-fit: contain; }
+.brand b { font-size: 21px; font-weight: 800; letter-spacing: -0.02em; }
+.pill-demo { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--mint-2); border: 1px solid color-mix(in srgb, var(--mint) 60%, transparent); padding: 2px 7px; border-radius: 99px; }
+.icon-btn { position: relative; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; color: var(--text-2); }
+.icon-btn:hover { background: var(--surface); }
+.badge { position: absolute; top: 5px; right: 5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 99px; background: var(--coral); color: #111; font-size: 11px; font-weight: 800; display: grid; place-items: center; }
+
+/* Vistas */
+.views { position: relative; flex: 1; min-height: 0; }
+.view { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; }
+.scroll > *, .place-list > * { flex-shrink: 0; }
+.scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 16px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+/* Barra inferior */
+.tabbar { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); position: relative; }
+.tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 4px 11px; color: var(--muted); font-size: 11.5px; font-weight: 500; }
+.tab[aria-current="page"] { color: var(--mint-2); font-weight: 700; }
+.tab svg.i { width: 24px; height: 24px; }
+.tab-ind { position: absolute; top: -1px; height: 3px; width: 14%; background: var(--mint-2); border-radius: 0 0 3px 3px; transition: left .25s ease; }
+
+/* Visor */
+.alert-banner { margin: 2px 16px 0; display: flex; gap: 10px; align-items: center; background: var(--coral); color: #1A1206; border-radius: 14px; padding: 10px 12px; text-align: left; }
+.alert-banner svg.i { width: 26px; height: 26px; stroke-width: 2.2; }
+.alert-banner b { display: block; font-size: 14.5px; font-weight: 700; line-height: 1.25; }
+.alert-banner span { font-size: 12px; font-weight: 600; opacity: .8; }
+.alert-banner[hidden] { display: none; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px 2px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line); color: var(--text-2); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.chip svg.i { width: 15px; height: 15px; }
+.chip.on { background: color-mix(in srgb, var(--mint) 22%, var(--surface)); border-color: var(--mint); color: var(--text); }
+.chip small { font-size: 11px; font-weight: 700; color: var(--mint-2); }
+.chip.locked { color: var(--muted); }
+
+.viewer { position: relative; flex: 1; min-height: 0; margin-top: 4px; touch-action: none; user-select: none; -webkit-user-select: none; overflow: hidden;
+  background: radial-gradient(60% 46% at 50% 52%, #1B2A47 0%, var(--bg) 100%); }
+.viewer canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.viewer canvas:active { cursor: grabbing; }
+.vtools { position: absolute; top: 10px; left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
+.vtools > div { display: flex; gap: 8px; }
+.vbtn { pointer-events: auto; display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 13px; border-radius: 99px; background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1px solid var(--line); color: var(--text); font-size: 13.5px; font-weight: 600; backdrop-filter: blur(6px); }
+.vbtn svg.i { width: 18px; height: 18px; }
+.vbtn.on { border-color: var(--mint-2); color: var(--mint-2); }
+.vbtn.round { width: 38px; padding: 0; justify-content: center; }
+.hint { position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; color: var(--muted); font-size: 12.5px; pointer-events: none; transition: opacity .3s; }
+.hotspots { position: absolute; inset: 0; pointer-events: none; }
+.hs { position: absolute; left: 0; top: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; pointer-events: auto; display: grid; place-items: center; transition: opacity .2s; }
+.hs::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: color-mix(in srgb, var(--coral) 35%, transparent); animation: pulse 2.2s ease-out infinite; }
+.hs::after { content: ""; width: 14px; height: 14px; border-radius: 50%; background: var(--coral); border: 2px solid #FFE9D6; box-shadow: 0 0 0 3px rgba(249,115,22,.25), 0 2px 6px rgba(0,0,0,.4); position: relative; }
+.hs.alert::after { background: var(--danger); border-color: #FFE4E9; box-shadow: 0 0 0 3px rgba(251,113,133,.3), 0 2px 6px rgba(0,0,0,.4); }
+.hs.alert::before { background: color-mix(in srgb, var(--danger) 40%, transparent); }
+.hs.sel::after { width: 18px; height: 18px; background: #FFF; border-color: var(--coral); }
+.hs.back { opacity: .0; pointer-events: none; }
+.hs-label { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); margin-top: -18px; padding: 4px 9px; border-radius: 8px; background: var(--text); color: var(--bg); font-size: 12px; font-weight: 700; white-space: nowrap; pointer-events: none; }
+@keyframes pulse { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(1.9); opacity: 0; } }
+
+.zone-sheet { position: absolute; left: 10px; right: 10px; bottom: 10px; max-height: 58%; overflow-y: auto; background: rgba(30,41,59,.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.08); border-radius: 22px; padding: 16px 16px 14px; transform: translateY(0); transition: transform .28s cubic-bezier(.2,.8,.2,1), opacity .2s; }
+.zone-sheet.closed { transform: translateY(115%); opacity: 0; pointer-events: none; }
+.zs-head { display: flex; align-items: flex-start; gap: 10px; }
+.zs-head h2 { margin: 0; font-size: 21px; line-height: 1.2; font-weight: 800; color: var(--coral); text-wrap: balance; flex: 1; }
+.zs-head h2.normal { color: var(--text); }
+.zs-count { font-size: 12px; color: var(--muted); font-weight: 600; margin-top: 3px; }
+.zs-x { width: 34px; height: 34px; border-radius: 50%; background: var(--line); display: grid; place-items: center; flex: none; }
+.zs-x svg.i { width: 18px; height: 18px; }
+.zs-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--coral-2); margin-bottom: 4px; }
+.spec { margin: 12px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 7px 12px; font-size: 14.5px; }
+.spec dt { font-weight: 700; color: var(--text); }
+.spec dd { margin: 0; color: var(--text-2); min-width: 0; }
+.zs-alert { margin-top: 12px; display: flex; gap: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(251,113,133,.12); border: 1px solid rgba(251,113,133,.45); font-size: 13.5px; color: #FFE4E9; }
+.zs-alert svg.i { color: var(--danger); width: 20px; height: 20px; margin-top: 1px; }
+.zs-alert button { color: var(--danger); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.zs-nav { display: flex; justify-content: space-between; margin-top: 12px; gap: 8px; }
+.zs-nav button { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--text-2); padding: 6px 8px; border-radius: 10px; }
+.zs-nav button:hover { background: rgba(255,255,255,.06); }
+.zs-nav svg.i { width: 18px; height: 18px; }
+
+/* Tarjetas genéricas */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px; }
+.sec-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 6px 2px -4px; }
+.sec-title h3 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.sec-title button { font-size: 13px; font-weight: 700; color: var(--mint-2); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 16px; border-radius: 13px; font-weight: 700; font-size: 14.5px; }
+.btn svg.i { width: 18px; height: 18px; }
+.btn-primary { background: var(--coral); color: #1A1206; }
+.btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); }
+.btn-mint { background: var(--mint); color: #F0FDFA; }
+.btn-block { width: 100%; }
+.sev { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; font-size: 11.5px; font-weight: 700; }
+.sev-alta { background: rgba(251,113,133,.16); color: var(--danger); }
+.sev-media { background: rgba(249,115,22,.16); color: var(--coral-2); }
+.sev-baja { background: rgba(45,212,191,.14); color: var(--mint-2); }
+.ok { background: rgba(45,212,191,.14); color: var(--mint-2); }
+.soon { background: rgba(96,165,250,.15); color: var(--cobalt-2); }
+
+/* Carnet */
+.pet { display: flex; gap: 14px; align-items: center; }
+.pet-av { width: 64px; height: 64px; border-radius: 20px; background: linear-gradient(160deg, #F6E7D3, #E5CBAE); display: grid; place-items: center; flex: none; }
+.pet-av svg { width: 46px; height: 46px; }
+.pet h2 { margin: 0; font-size: 22px; font-weight: 800; }
+.pet p { margin: 2px 0 0; color: var(--muted); font-size: 13.5px; }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.facts div { background: var(--surface-2); border-radius: 12px; padding: 8px 10px; }
+.facts dt { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.facts dd { margin: 2px 0 0; font-weight: 700; font-size: 14px; }
+.cond { display: flex; flex-direction: column; gap: 8px; }
+.cond-top { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.cond h4 { margin: 0; font-size: 16px; font-weight: 700; }
+.cond p { margin: 0; color: var(--text-2); font-size: 13.5px; }
+.cond .meta { font-size: 12.5px; color: var(--muted); }
+.cond-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.cond-actions button { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); font-size: 13px; font-weight: 600; }
+.cond-actions button svg.i { width: 16px; height: 16px; }
+.cond.alta { border-left: 4px solid var(--danger); }
+.cond.media { border-left: 4px solid var(--coral); }
+.cond.baja { border-left: 4px solid var(--mint-2); }
+.rows { display: flex; flex-direction: column; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; padding-bottom: 2px; }
+.row:first-child { padding-top: 2px; }
+.row b { font-weight: 600; font-size: 14.5px; display: block; }
+.row span.sub { color: var(--muted); font-size: 12.5px; }
+.empty { color: var(--muted); font-size: 13.5px; text-align: center; padding: 8px; }
+
+/* Mapa */
+.map-wrap { position: relative; height: 47%; min-height: 220px; flex: none; overflow: hidden; touch-action: none; background: #0E1729; border-bottom: 1px solid var(--line); }
+.map-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tiles { position: absolute; inset: 0; filter: invert(1) hue-rotate(185deg) brightness(.92) contrast(.88) saturate(.55); }
+.tiles img { position: absolute; left: 0; top: 0; width: 256px; height: 256px; transform-origin: 0 0; user-select: none; -webkit-user-drag: none; max-width: none; }
+.pins { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.pin { position: absolute; left: 0; top: 0; width: 34px; height: 42px; margin: -42px 0 0 -17px; pointer-events: auto; transition: transform .15s; }
+.pin svg.shape { width: 34px; height: 42px; display: block; filter: drop-shadow(0 3px 4px rgba(0,0,0,.45)); }
+.pin svg.i { position: absolute; left: 8px; top: 7px; width: 18px; height: 18px; color: #fff; stroke-width: 2.4; }
+.pin.sel { z-index: 3; }
+.pin.sel svg.shape { transform: scale(1.18); transform-origin: 50% 100%; }
+.pin.sp { z-index: 2; }
+.me { position: absolute; left: 0; top: 0; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: var(--cobalt-2); border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(96,165,250,.25); }
+.me::after { content: ""; position: absolute; inset: -12px; border-radius: 50%; border: 2px solid rgba(96,165,250,.6); animation: pulse 2.4s ease-out infinite; }
+.map-ui { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.map-ui > * { pointer-events: auto; }
+.map-filters { position: absolute; top: 10px; left: 0; right: 0; padding: 0 12px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.map-filters .chip { background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(6px); }
+.map-zoom { position: absolute; right: 12px; bottom: 34px; display: flex; flex-direction: column; gap: 8px; }
+.map-zoom button { width: 40px; height: 40px; border-radius: 12px; background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--line); display: grid; place-items: center; }
+.gps { position: absolute; left: 12px; bottom: 34px; display: inline-flex; align-items: center; gap: 7px; max-width: calc(100% - 80px); height: 32px; padding: 0 11px; border-radius: 99px; background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--line); font-size: 12px; font-weight: 600; color: var(--text-2); }
+.gps i { width: 8px; height: 8px; border-radius: 50%; background: var(--coral); flex: none; }
+.gps.live i { background: var(--mint-2); box-shadow: 0 0 0 3px rgba(45,212,191,.25); }
+.gps span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attrib { position: absolute; right: 6px; bottom: 4px; font-size: 10px; color: var(--muted); background: rgba(15,23,42,.7); padding: 1px 5px; border-radius: 4px; }
+.place-list { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+.biz { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 16px; background: linear-gradient(120deg, rgba(37,99,235,.22), rgba(13,148,136,.18)); border: 1px solid rgba(96,165,250,.3); text-align: left; }
+.biz b { display: block; font-size: 14px; }
+.biz span { font-size: 12.5px; color: var(--text-2); }
+.place { text-align: left; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.place.sp { border-color: rgba(249,115,22,.55); background: linear-gradient(180deg, rgba(249,115,22,.09), rgba(249,115,22,0) 60%), var(--surface); }
+.place.sel { box-shadow: 0 0 0 2px var(--cobalt-2) inset; }
+.p-top { display: flex; gap: 10px; align-items: flex-start; }
+.p-ico { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; flex: none; color: #fff; }
+.p-main { flex: 1; min-width: 0; }
+.p-main b { display: block; font-size: 15px; font-weight: 700; line-height: 1.3; }
+.p-main .sub { font-size: 12.5px; color: var(--muted); }
+.p-dist { font-weight: 700; font-size: 14px; color: var(--text); white-space: nowrap; }
+.sp-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; color: #1A1206; background: var(--coral); border-radius: 6px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+.sp-badge svg.i { width: 11px; height: 11px; stroke-width: 3; }
+.ad { font-size: 11px; color: var(--muted); }
+.open { color: var(--mint-2); font-weight: 600; }
+.closed { color: var(--coral-2); font-weight: 600; }
+.p-more { display: flex; flex-direction: column; gap: 10px; padding-top: 4px; }
+.p-more[hidden] { display: none; }
+.svc { display: flex; flex-wrap: wrap; gap: 6px; }
+.svc span { font-size: 12px; padding: 3px 8px; border-radius: 99px; background: var(--surface-2); color: var(--text-2); }
+.p-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.p-actions a, .p-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 40px; border-radius: 11px; font-weight: 700; font-size: 13.5px; text-decoration: none; }
+.p-actions a { background: var(--cobalt); color: #fff; }
+.p-actions button { background: var(--surface-2); border: 1px solid var(--line); }
+.p-actions svg.i { width: 17px; height: 17px; }
+.demo-note { font-size: 12px; color: var(--muted); text-align: center; }
+
+/* Premium */
+.offer { position: relative; overflow: hidden; border-radius: 22px; padding: 18px; background: linear-gradient(150deg, #1D4ED8 0%, #2563EB 45%, #0D9488 130%); color: #fff; }
+.offer::after { content: ""; position: absolute; right: -40px; top: -40px; width: 160px; height: 160px; border-radius: 50%; background: rgba(255,255,255,.08); }
+.offer small { font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 11.5px; opacity: .85; }
+.offer h2 { margin: 6px 0 2px; font-size: 26px; line-height: 1.15; font-weight: 800; text-wrap: balance; }
+.offer .price { font-size: 44px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin-top: 10px; }
+.offer .price span { font-size: 15px; font-weight: 600; opacity: .85; letter-spacing: 0; }
+.offer p { margin: 6px 0 14px; opacity: .9; font-size: 13.5px; }
+.offer .btn-primary { position: relative; z-index: 1; }
+.plans { display: grid; gap: 10px; }
+.plan { display: flex; flex-direction: column; gap: 8px; }
+.plan-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.plan h4 { margin: 0; font-size: 17px; font-weight: 800; }
+.plan .pp { font-size: 22px; font-weight: 800; }
+.plan .pp span { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.plan ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; font-size: 13.5px; color: var(--text-2); }
+.plan li { display: flex; gap: 8px; align-items: flex-start; }
+.plan li svg.i { width: 16px; height: 16px; color: var(--mint-2); margin-top: 2px; stroke-width: 2.6; }
+.plan.cur { border-color: var(--mint); }
+.plan.best { border-color: var(--cobalt-2); }
+.plan .tag { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--cobalt-2); }
+.clinic { border-color: rgba(249,115,22,.5); background: linear-gradient(180deg, rgba(249,115,22,.1), rgba(249,115,22,0) 70%), var(--surface); }
+.fine { font-size: 12px; color: var(--muted); margin: 0; }
+
+/* Hojas modales, formularios y avisos */
+.modal { position: absolute; inset: 0; background: rgba(2,6,23,.6); display: flex; align-items: flex-end; z-index: 20; }
+.modal[hidden] { display: none; }
+.modal-card { width: 100%; max-height: 88%; overflow-y: auto; background: var(--surface); border-radius: 24px 24px 0 0; border-top: 1px solid var(--line); padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 12px; animation: up .25s cubic-bezier(.2,.8,.2,1); }
+@keyframes up { from { transform: translateY(40%); opacity: .4; } to { transform: none; opacity: 1; } }
+.modal-card h3 { margin: 0; font-size: 20px; font-weight: 800; text-wrap: balance; }
+.modal-card p { margin: 0; color: var(--text-2); font-size: 14px; }
+.grab { width: 40px; height: 4px; border-radius: 4px; background: var(--line); align-self: center; margin-top: -6px; }
+.field { display: grid; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+.field input, .field select, .field textarea { width: 100%; font: inherit; font-size: 15px; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; }
+.field textarea { min-height: 70px; resize: vertical; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; }
+.seg span { display: grid; place-items: center; height: 40px; border-radius: 11px; background: var(--bg); border: 1px solid var(--line); font-weight: 700; font-size: 13.5px; color: var(--text-2); }
+.seg input:checked + span { border-color: var(--coral); color: var(--text); background: rgba(249,115,22,.12); }
+.seg input:focus-visible + span { outline: 2px solid var(--cobalt-2); outline-offset: 2px; }
+.toast { position: absolute; left: 16px; right: 16px; bottom: 84px; z-index: 30; background: var(--text); color: var(--bg); border-radius: 14px; padding: 12px 14px; font-size: 14px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.4); display: flex; gap: 10px; align-items: center; }
+.toast[hidden] { display: none; }
+.toast svg.i { color: var(--mint); }
+.nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+
+.pitch { display: none; }
+@media (min-width: 980px) {
+  .stage { grid-template-columns: minmax(0, 360px) 412px; gap: 64px; justify-content: center; }
+  .pitch { display: flex; flex-direction: column; gap: 22px; color: var(--text-2); }
+  .pitch-brand { display: flex; align-items: center; gap: 12px; }
+  .pitch-brand img { width: 46px; height: 52px; object-fit: contain; }
+  .pitch-brand b { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+  .pitch h1 { margin: 0; font-size: 15px; font-weight: 600; color: var(--mint-2); letter-spacing: .02em; }
+  .pitch ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; }
+  .pitch li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; font-size: 14.5px; }
+  .pitch li span.k { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); color: var(--coral); }
+  .pitch li span.k svg.i { width: 18px; height: 18px; }
+  .pitch li b { display: block; color: var(--text); font-size: 15px; }
+  .pitch .fine { max-width: 34ch; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs::before, .me::after { animation: none; }
+  .zone-sheet, .modal-card, .tab-ind { transition: none; animation: none; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 2.6 20.4 7.3v9.4L12 21.4l-8.4-4.7V7.3z"/><path d="M3.6 7.3 12 12l8.4-4.7M12 12v9.4"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.6"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16.6a3.4 3.4 0 0 1 6.4 0M14.6 10h4M14.6 13.6h4"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21.6S5 15.4 5 10a7 7 0 0 1 14 0c0 5.4-7 11.6-7 11.6z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+    <symbol id="i-crown" viewBox="0 0 24 24"><path d="m3.5 8 4.3 3.7L12 5.4l4.2 6.3L20.5 8l-1.7 10.2H5.2z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9.5a6 6 0 0 1 12 0c0 5.7 2.4 7.5 2.4 7.5H3.6S6 15.2 6 9.5z"/><path d="M10.2 20.2a2 2 0 0 0 3.6 0"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4 2.5 17.6a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0z"/><path d="M12 9.2v4.2M12 17h.01"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.2 6.2 17.8 17.8M17.8 6.2 6.2 17.8"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M19.6 10.6A7.8 7.8 0 0 0 5.2 7.6"/><path d="M4.6 3.6v4.3h4.3"/><path d="M4.4 13.4a7.8 7.8 0 0 0 14.4 3"/><path d="M19.4 20.4v-4.3h-4.3"/></symbol>
+    <symbol id="i-zoom" viewBox="0 0 24 24"><circle cx="10.6" cy="10.6" r="7"/><path d="m20.6 20.6-5-5M10.6 7.6v6M7.6 10.6h6"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z"/></symbol>
+    <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></symbol>
+    <symbol id="i-cross" viewBox="0 0 24 24"><path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/></symbol>
+    <symbol id="i-nav" viewBox="0 0 24 24"><path d="m3 11 18-8-8 18-2-8z"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.4"/><path d="M8 3v4M16 3v4M3.5 10h17"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9.5V20h16V9.5M3 9.5 5 4h14l2 5.5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M9.5 20v-5h5v5"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  </defs>
+</svg>
+
+<div class="stage">
+<aside class="pitch" aria-label="Resumen del prototipo">
+  <div class="pitch-brand"><img src="data:image/png;base64,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" alt=""><b>GroomVision</b></div>
+  <h1>Prototipo funcional · Aplicación Web Progresiva</h1>
+  <ul>
+    <li><span class="k"><svg class="i"><use href="#i-cube"/></svg></span><div><b>Visor 3D en 360°</b>Puntos técnicos por zona: cuchilla, tijera, dirección y notas de corte.</div></li>
+    <li><span class="k"><svg class="i"><use href="#i-card"/></svg></span><div><b>Carnet médico con alertas</b>Cada afección marca su zona en el modelo y avisa al groomer.</div></li>
+    <li><span class="k"><svg class="i"><use href="#i-pin"/></svg></span><div><b>Directorio geolocalizado</b>Veterinarias y estéticas cercanas, con clínicas destacadas.</div></li>
+    <li><span class="k"><svg class="i"><use href="#i-crown"/></svg></span><div><b>Modelo freemium</b>Demo gratis con Poodle, Premium $2.99, Profesional $4.99 y clínicas $9.99 al mes.</div></li>
+  </ul>
+  <p class="fine">Datos de demostración. Las compras y citas son simuladas.</p>
+</aside>
+<div class="phone" id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <img src="data:image/png;base64,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" alt="">
+      <b>GroomVision</b>
+      <span class="pill-demo">Prototipo</span>
+    </div>
+    <button class="icon-btn" id="bellBtn" aria-label="Alertas del carnet">
+      <svg class="i"><use href="#i-bell"/></svg>
+      <span class="badge tnum" id="bellCount">2</span>
+    </button>
+  </header>
+
+  <main class="views">
+
+    <!-- VISOR 3D -->
+    <section class="view" id="view-visor" aria-label="Visor 3D">
+      <button class="alert-banner" id="alertBanner">
+        <svg class="i"><use href="#i-alert"/></svg>
+        <div><b id="alertText">¡Atención: Rocky tiene dermatitis atópica en el lomo!</b><span id="alertSub">Toca para ver el carnet médico</span></div>
+      </button>
+      <div class="chips" id="breedChips" role="list" aria-label="Razas"></div>
+      <div class="viewer" id="viewer">
+        <canvas id="gl" aria-label="Modelo 3D de un Poodle. Arrastra para girar."></canvas>
+        <div class="hotspots" id="hotspots"></div>
+        <div class="vtools">
+          <div><button class="vbtn" id="btnRotate"><svg class="i"><use href="#i-rotate"/></svg>Girar 360°</button></div>
+          <div>
+            <button class="vbtn" id="btnZoom"><svg class="i"><use href="#i-zoom"/></svg>Zoom</button>
+            <button class="vbtn round" id="btnReset" aria-label="Vista inicial"><svg class="i"><use href="#i-target"/></svg></button>
+          </div>
+        </div>
+        <div class="hint" id="hint">Arrastra para girar · Pellizca para zoom · Toca un punto</div>
+        <div class="zone-sheet closed" id="zoneSheet" aria-live="polite">
+          <div class="zs-head">
+            <div style="flex:1;min-width:0">
+              <div class="zs-tag" id="zsTag" hidden><svg class="i" style="width:14px;height:14px"><use href="#i-alert"/></svg>Zona sensible</div>
+              <h2 id="zsTitle">Lomo</h2>
+              <div class="zs-count tnum" id="zsCount">Zona 1 de 7 · Poodle</div>
+            </div>
+            <button class="zs-x" id="zsClose" aria-label="Cerrar ficha"><svg class="i"><use href="#i-x"/></svg></button>
+          </div>
+          <dl class="spec">
+            <dt>Cuchilla:</dt><dd id="zsBlade"></dd>
+            <dt>Tijera:</dt><dd id="zsScissor"></dd>
+            <dt>Dirección:</dt><dd id="zsDir"></dd>
+            <dt>Notas:</dt><dd id="zsNotes"></dd>
+          </dl>
+          <div id="zsAlerts"></div>
+          <div class="zs-nav">
+            <button id="zsPrev"><svg class="i"><use href="#i-left"/></svg><span id="zsPrevName">Anterior</span></button>
+            <button id="zsNext"><span id="zsNextName">Siguiente</span><svg class="i"><use href="#i-right"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARNET -->
+    <section class="view" id="view-carnet" aria-label="Carnet médico" hidden>
+      <div class="scroll" id="carnetScroll">
+        <div class="card">
+          <div class="pet">
+            <div class="pet-av" aria-hidden="true">
+              <svg viewBox="0 0 48 48"><circle cx="24" cy="15" r="9" fill="#FFF8EE"/><circle cx="17" cy="13" r="5" fill="#FFF8EE"/><circle cx="31" cy="13" r="5" fill="#FFF8EE"/><ellipse cx="24" cy="27" rx="8" ry="9" fill="#F3DCC4"/><ellipse cx="14.5" cy="27" rx="4.5" ry="8" fill="#E7C6A3"/><ellipse cx="33.5" cy="27" rx="4.5" ry="8" fill="#E7C6A3"/><ellipse cx="24" cy="33" rx="4.6" ry="4" fill="#EED2B8"/><circle cx="24" cy="31.4" r="1.8" fill="#1F2937"/><circle cx="20.5" cy="25" r="1.3" fill="#1F2937"/><circle cx="27.5" cy="25" r="1.3" fill="#1F2937"/></svg>
+            </div>
+            <div style="min-width:0">
+              <h2>Rocky</h2>
+              <p>Poodle miniatura · Macho</p>
+            </div>
+          </div>
+          <dl class="facts">
+            <div><dt>Edad</dt><dd>4 años</dd></div>
+            <div><dt>Peso</dt><dd class="tnum">6,2 kg</dd></div>
+            <div><dt>Pelaje</dt><dd>Albaricoque</dd></div>
+          </dl>
+        </div>
+
+        <div class="sec-title"><h3>Alertas activas</h3><button id="addCondBtn">+ Agregar</button></div>
+        <div id="condList" style="display:flex;flex-direction:column;gap:10px"></div>
+
+        <div class="sec-title"><h3>Historial médico</h3></div>
+        <div class="card rows" id="historyList"></div>
+
+        <div class="sec-title"><h3>Vacunas y desparasitación</h3></div>
+        <div class="card rows">
+          <div class="row"><div><b>Antirrábica</b><span class="sub">Aplicada 14 mar 2026</span></div><span class="sev ok">Al día</span></div>
+          <div class="row"><div><b>Séxtuple (refuerzo anual)</b><span class="sub">Aplicada 14 mar 2026</span></div><span class="sev ok">Al día</span></div>
+          <div class="row"><div><b>Desparasitación interna</b><span class="sub">Próxima dosis 20 oct 2026</span></div><span class="sev soon">Próxima</span></div>
+        </div>
+
+        <div class="sec-title"><h3>Cortes en GroomVision</h3></div>
+        <div class="card rows">
+          <div class="row"><div><b>Corte cordero (lamb clip)</b><span class="sub">20 sep 2026 · Cuchilla #4F en lomo por dermatitis</span></div></div>
+          <div class="row"><div><b>Baño y mantenimiento de pompones</b><span class="sub">23 ago 2026 · Champú de avena</span></div></div>
+          <div class="row"><div><b>Corte continental adaptado</b><span class="sub">12 jul 2026 · Sin observaciones</span></div></div>
+        </div>
+        <p class="fine" style="text-align:center">Datos de ejemplo para el prototipo.</p>
+      </div>
+    </section>
+
+    <!-- MAPA -->
+    <section class="view" id="view-mapa" aria-label="Mapa de veterinarias" hidden>
+      <div class="map-wrap" id="mapWrap">
+        <canvas id="mapBg"></canvas>
+        <div class="tiles" id="mapTiles"></div>
+        <div class="pins" id="mapPins"></div>
+        <div class="map-ui">
+          <div class="map-filters" id="mapFilters">
+            <button class="chip on" data-f="all">Todos</button>
+            <button class="chip" data-f="vet"><svg class="i"><use href="#i-cross"/></svg>Veterinarias</button>
+            <button class="chip" data-f="groom"><svg class="i"><use href="#i-scissors"/></svg>Estéticas</button>
+          </div>
+          <div class="map-zoom">
+            <button id="mapLocate" aria-label="Usar mi ubicación"><svg class="i"><use href="#i-target"/></svg></button>
+            <button id="mapIn" aria-label="Acercar"><svg class="i"><use href="#i-plus"/></svg></button>
+            <button id="mapOut" aria-label="Alejar"><svg class="i"><use href="#i-minus"/></svg></button>
+          </div>
+          <div class="gps" id="gpsStatus"><i></i><span>Buscando tu ubicación…</span></div>
+          <div class="attrib" id="attrib">Mapa ilustrativo</div>
+        </div>
+      </div>
+      <div class="place-list" id="placeList"></div>
+    </section>
+
+    <!-- PREMIUM -->
+    <section class="view" id="view-premium" aria-label="Planes" hidden>
+      <div class="scroll">
+        <div class="offer">
+          <small>Oferta de lanzamiento</small>
+          <h2>Desbloquea todas las razas y herramientas</h2>
+          <div class="price tnum">$0.99 <span>el primer mes</span></div>
+          <p>Después desde $2.99 al mes. Cancela cuando quieras.</p>
+          <button class="btn btn-primary btn-block" id="buyOffer"><svg class="i"><use href="#i-crown"/></svg><span id="buyLabel">Activar oferta</span></button>
+        </div>
+
+        <div class="sec-title"><h3>Planes</h3></div>
+        <div class="plans">
+          <div class="card plan cur" id="planDemo">
+            <div class="plan-top"><h4>Demo</h4><div class="pp tnum">$0</div></div>
+            <ul>
+              <li><svg class="i"><use href="#i-check"/></svg>1 raza de prueba: Poodle</li>
+              <li><svg class="i"><use href="#i-check"/></svg>Visor 3D con fichas técnicas</li>
+              <li><svg class="i"><use href="#i-check"/></svg>Registro básico de salud</li>
+            </ul>
+          </div>
+          <div class="card plan best">
+            <span class="tag">Para tutores</span>
+            <div class="plan-top"><h4>Premium</h4><div class="pp tnum">$2.99 <span>/mes</span></div></div>
+            <ul>
+              <li><svg class="i"><use href="#i-check"/></svg>Todas las razas en 3D</li>
+              <li><svg class="i"><use href="#i-check"/></svg>Carnet médico completo con alertas</li>
+              <li><svg class="i"><use href="#i-check"/></svg>Historial de cortes ilimitado</li>
+            </ul>
+          </div>
+          <div class="card plan">
+            <span class="tag" style="color:var(--mint-2)">Para groomers y peluquerías</span>
+            <div class="plan-top"><h4>Profesional</h4><div class="pp tnum">$4.99 <span>/mes</span></div></div>
+            <ul>
+              <li><svg class="i"><use href="#i-check"/></svg>Todo lo de Premium</li>
+              <li><svg class="i"><use href="#i-check"/></svg>Fichas de varios clientes y mascotas</li>
+              <li><svg class="i"><use href="#i-check"/></svg>Guía técnica para estandarizar al personal</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="sec-title"><h3>Para clínicas veterinarias</h3></div>
+        <div class="card plan clinic" id="clinicPlan">
+          <div class="plan-top"><h4>Destacado en el mapa</h4><div class="pp tnum">$9.99 <span>/mes</span></div></div>
+          <ul>
+            <li><svg class="i"><use href="#i-check"/></svg>Aparece primero en el directorio cercano</li>
+            <li><svg class="i"><use href="#i-check"/></svg>Pin destacado y etiqueta en el mapa</li>
+            <li><svg class="i"><use href="#i-check"/></svg>Solicitudes de cita desde la app</li>
+          </ul>
+          <button class="btn btn-ghost" id="seeMapBtn"><svg class="i"><use href="#i-pin"/></svg>Ver cómo se muestra</button>
+        </div>
+
+        <p class="fine" style="text-align:center">Compras simuladas: en este prototipo no se realiza ningún cobro.</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="Secciones">
+    <span class="tab-ind" id="tabInd"></span>
+    <button class="tab" data-tab="visor" aria-current="page"><svg class="i"><use href="#i-cube"/></svg>Visor 3D</button>
+    <button class="tab" data-tab="carnet"><svg class="i"><use href="#i-card"/></svg>Carnet</button>
+    <button class="tab" data-tab="mapa"><svg class="i"><use href="#i-pin"/></svg>Mapa</button>
+    <button class="tab" data-tab="premium"><svg class="i"><use href="#i-crown"/></svg>Premium</button>
+  </nav>
+
+  <div class="modal" id="modal" hidden><div class="modal-card" id="modalCard" role="dialog" aria-modal="true"></div></div>
+  <div class="toast" id="toast" role="status" hidden><svg class="i"><use href="#i-check"/></svg><span id="toastText"></span></div>
+</div>
+</div>
+
+<script>
+'use strict';
+/* ════════════════════════════ Datos ════════════════════════════ */
+const ZONES = [
+  { id: 'copete', name: 'Copete', part: 'topknot', dir: [0, 1, 0.25],
+    blade: 'No aplica (solo tijera)', scissor: 'Curva 8" y de entresacar', direction: 'Peinar hacia arriba y cortar en forma de domo',
+    notes: 'Marcar la línea desde el stop hacia la oreja. No cortar recto sobre los ojos.' },
+  { id: 'orejas', name: 'Orejas', part: 'earR', dir: [1, -0.25, 0.1],
+    blade: '#10 solo en la cara interna', scissor: 'Recta 8"', direction: 'A favor del pelo',
+    notes: 'Emparejar el borde conservando el largo. Limpiar y secar el canal auditivo.' },
+  { id: 'cara', name: 'Cara y hocico', part: 'muzzle', dir: [0.35, 0.8, 0.6],
+    blade: '#15 (o #10 si la piel se irrita)', scissor: 'No aplica', direction: 'A contrapelo para un acabado limpio',
+    notes: 'Rasurar desde la oreja hasta el ojo y en V bajo el cuello. Tensar la piel de los labios.' },
+  { id: 'pecho', name: 'Pecho', part: 'chest', dir: [0.25, -0.05, 1],
+    blade: '#4F para la preforma', scissor: 'Curva 8"', direction: 'A favor del pelo, luego tijera',
+    notes: 'Redondear siguiendo el esternón y suavizar la transición hacia los hombros.' },
+  { id: 'lomo', name: 'Lomo', part: 'torso', dir: [0.15, 1, 0.1], sensitive: true,
+    blade: '#4F (más larga por la dermatitis)', scissor: 'Recta 8" para emparejar', direction: 'A favor del pelo',
+    notes: 'No usar cuchillas cortas ni secador caliente. Bañar con champú de avena hipoalergénico.' },
+  { id: 'patas', name: 'Patas y pompones', part: 'pomFR', dir: [1, 0.15, 0.35],
+    blade: '#15 en los pies', scissor: 'Curva para los pompones', direction: 'A contrapelo en pies; pompón peinado hacia afuera',
+    notes: 'Rasurar el pie hasta la articulación y redondear el pompón del tobillo. Revisar almohadillas y uñas.' },
+  { id: 'cola', name: 'Cola', part: 'tailPom', dir: [0.3, 0.7, -1],
+    blade: '#10 en la base', scissor: 'Curva', direction: 'A favor del pelo en la base',
+    notes: 'Dejar el pompón en el último tercio y redondearlo con tijera curva.' },
+];
+const ZONE_BY_ID = Object.fromEntries(ZONES.map(z => [z.id, z]));
+const BREEDS = ['Poodle', 'Schnauzer', 'Shih Tzu', 'Yorkshire', 'Bichón Frisé', 'Golden Retriever', 'Cocker Spaniel', 'Pomerania'];
+const DEFAULT_CONDS = [
+  { id: 'c1', name: 'Dermatitis atópica', zone: 'lomo', sev: 'alta', since: 'Agosto 2026', note: 'Piel enrojecida y descamación. Tratamiento tópico indicado por el veterinario.' },
+  { id: 'c2', name: 'Alergia a fragancias', zone: 'general', sev: 'media', since: 'Junio 2026', note: 'Usar solo champú hipoalergénico sin perfume.' },
+];
+const DEFAULT_HISTORY = [
+  { name: 'Otitis externa', zone: 'orejas', date: 'Marzo 2026' },
+  { name: 'Corte leve en almohadilla', zone: 'patas', date: 'Noviembre 2025' },
+];
+// Lugares de demostración: desplazamientos en metros desde el centro del mapa (este, norte).
+const DEMO_PLACES = [
+  { id: 'p1', name: 'Hospital Veterinario Huellitas 24h', type: 'vet', sp: true, dx: 520, dy: 310, open: [0, 24], rating: 4.8, reviews: 312, services: ['Emergencias 24h', 'Dermatología', 'Cirugía', 'Rayos X'] },
+  { id: 'p2', name: 'Estética Canina Pompón', type: 'groom', sp: true, dx: -380, dy: 640, open: [9, 19], rating: 4.9, reviews: 187, services: ['Corte por raza', 'Baño medicado', 'Spa'] },
+  { id: 'p3', name: 'DermaVet Centro Dermatológico', type: 'vet', dx: 260, dy: -230, open: [8, 18], rating: 4.7, reviews: 96, services: ['Dermatología', 'Alergias', 'Laboratorio'] },
+  { id: 'p4', name: 'Clínica Veterinaria Arca', type: 'vet', dx: -610, dy: -420, open: [8, 20], rating: 4.5, reviews: 140, services: ['Consulta general', 'Vacunación'] },
+  { id: 'p5', name: 'Guau Style Peluquería', type: 'groom', dx: 900, dy: -150, open: [10, 19], rating: 4.6, reviews: 74, services: ['Corte', 'Deslanado', 'Uñas'] },
+  { id: 'p6', name: 'VetSalud Norte', type: 'vet', dx: -120, dy: 1350, open: [8, 21], rating: 4.4, reviews: 58, services: ['Consulta general', 'Odontología'] },
+  { id: 'p7', name: 'Spa Canino Burbujas', type: 'groom', dx: -1120, dy: 260, open: [9, 18], rating: 4.3, reviews: 41, services: ['Baño', 'Hidratación', 'Corte'] },
+  { id: 'p8', name: 'Clínica Veterinaria Colitas', type: 'vet', dx: 1420, dy: 980, open: [9, 19], rating: 4.6, reviews: 122, services: ['Vacunación', 'Desparasitación', 'Cirugía'] },
+];
+const DEFAULT_CENTER = { lat: -2.1709, lng: -79.9224, label: 'Guayaquil (ubicación de ejemplo)' };
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('gv_' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('gv_' + k, JSON.stringify(v)); } catch (e) { /* sin almacenamiento */ } },
+};
+const state = {
+  tab: 'visor',
+  premium: store.get('premium', false),
+  conds: store.get('conds', DEFAULT_CONDS),
+  history: store.get('history', DEFAULT_HISTORY),
+  zone: null,
+};
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const icon = (n, cls = 'i') => `<svg class="${cls}"><use href="#i-${n}"/></svg>`;
+
+/* ════════════════════════════ Visor 3D (WebGL propio) ════════════════════════════ */
+const GV3D = (() => {
+  const D = Math.PI / 180;
+  const FUR = [0.97, 0.89, 0.78], FUR2 = [0.93, 0.78, 0.62], SKIN = [0.93, 0.80, 0.72], DARK = [0.06, 0.06, 0.07];
+  const PARTS = {
+    torso:   { c: [0, 0.6, -0.04],  r: [0.2, 0.19, 0.34],  col: FUR, fl: 0.024 },
+    chest:   { c: [0, 0.64, 0.21],  r: [0.19, 0.22, 0.16], col: FUR, fl: 0.03 },
+    hind:    { c: [0, 0.6, -0.3],   r: [0.18, 0.18, 0.15], col: FUR, fl: 0.026 },
+    neck:    { c: [0, 0.86, 0.31],  r: [0.1, 0.19, 0.1], rot: [28, 0, 0], col: FUR, fl: 0.02 },
+    head:    { c: [0, 1.05, 0.42],  r: [0.105, 0.1, 0.11], col: SKIN },
+    topknot: { c: [0, 1.19, 0.37],  r: [0.135, 0.12, 0.14], col: FUR, fl: 0.036 },
+    muzzle:  { c: [0, 1.01, 0.555], r: [0.05, 0.052, 0.12], rot: [-6, 0, 0], col: SKIN },
+    nose:    { c: [0, 1.022, 0.672], r: [0.028, 0.024, 0.024], col: DARK, gloss: true },
+    eyeL:    { c: [-0.05, 1.085, 0.503], r: [0.017, 0.017, 0.012], col: DARK, gloss: true },
+    eyeR:    { c: [0.05, 1.085, 0.503],  r: [0.017, 0.017, 0.012], col: DARK, gloss: true },
+    earL:    { c: [-0.118, 0.96, 0.4], r: [0.055, 0.15, 0.075], rot: [0, 0, -10], col: FUR2, fl: 0.03 },
+    earR:    { c: [0.118, 0.96, 0.4],  r: [0.055, 0.15, 0.075], rot: [0, 0, 10], col: FUR2, fl: 0.03 },
+    legFL:   { c: [-0.095, 0.25, 0.2],  r: [0.04, 0.24, 0.044], col: SKIN },
+    legFR:   { c: [0.095, 0.25, 0.2],   r: [0.04, 0.24, 0.044], col: SKIN },
+    legBL:   { c: [-0.095, 0.25, -0.3], r: [0.044, 0.24, 0.05], col: SKIN },
+    legBR:   { c: [0.095, 0.25, -0.3],  r: [0.044, 0.24, 0.05], col: SKIN },
+    pomFL:   { c: [-0.095, 0.115, 0.2],  r: [0.07, 0.07, 0.07], col: FUR, fl: 0.03 },
+    pomFR:   { c: [0.095, 0.115, 0.2],   r: [0.07, 0.07, 0.07], col: FUR, fl: 0.03 },
+    pomBL:   { c: [-0.095, 0.115, -0.3], r: [0.072, 0.072, 0.072], col: FUR, fl: 0.03 },
+    pomBR:   { c: [0.095, 0.115, -0.3],  r: [0.072, 0.072, 0.072], col: FUR, fl: 0.03 },
+    footFL:  { c: [-0.095, 0.026, 0.235], r: [0.04, 0.026, 0.06], col: SKIN },
+    footFR:  { c: [0.095, 0.026, 0.235],  r: [0.04, 0.026, 0.06], col: SKIN },
+    footBL:  { c: [-0.095, 0.026, -0.265], r: [0.042, 0.026, 0.06], col: SKIN },
+    footBR:  { c: [0.095, 0.026, -0.265],  r: [0.042, 0.026, 0.06], col: SKIN },
+    tail:    { c: [0, 0.83, -0.46], r: [0.027, 0.13, 0.027], rot: [-28, 0, 0], col: SKIN },
+    tailPom: { c: [0, 0.965, -0.535], r: [0.085, 0.085, 0.085], col: FUR, fl: 0.032 },
+  };
+
+  // ── utilidades matemáticas ──
+  const norm = v => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+  function rotV(v, rot) {
+    let [x, y, z] = v; if (!rot) return [x, y, z];
+    const [ax, ay, az] = rot; let c, s;
+    if (ax) { c = Math.cos(ax * D); s = Math.sin(ax * D); [y, z] = [y * c - z * s, y * s + z * c]; }
+    if (ay) { c = Math.cos(ay * D); s = Math.sin(ay * D); [x, z] = [x * c + z * s, -x * s + z * c]; }
+    if (az) { c = Math.cos(az * D); s = Math.sin(az * D); [x, y] = [x * c - y * s, x * s + y * c]; }
+    return [x, y, z];
+  }
+  function hash3(x, y, z) {
+    let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 1440662683);
+    h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296;
+  }
+  function vnoise(x, y, z) {
+    const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+    let u = x - xi, v = y - yi, w = z - zi; u = u * u * (3 - 2 * u); v = v * v * (3 - 2 * v); w = w * w * (3 - 2 * w);
+    const L = (a, b, t) => a + (b - a) * t;
+    const n = (i, j, k) => hash3(xi + i, yi + j, zi + k);
+    return L(L(L(n(0, 0, 0), n(1, 0, 0), u), L(n(0, 1, 0), n(1, 1, 0), u), v), L(L(n(0, 0, 1), n(1, 0, 1), u), L(n(0, 1, 1), n(1, 1, 1), u), v), w);
+  }
+  const icoCache = {};
+  function icosphere(level) {
+    if (icoCache[level]) return icoCache[level];
+    const t = (1 + Math.sqrt(5)) / 2;
+    const verts = [[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]].map(norm);
+    let faces = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+    for (let l = 0; l < level; l++) {
+      const mid = new Map(), next = [];
+      const m = (a, b) => { const k = a < b ? a + '_' + b : b + '_' + a; if (mid.has(k)) return mid.get(k); const va = verts[a], vb = verts[b]; verts.push(norm([va[0] + vb[0], va[1] + vb[1], va[2] + vb[2]])); mid.set(k, verts.length - 1); return verts.length - 1; };
+      for (const [a, b, c] of faces) { const ab = m(a, b), bc = m(b, c), ca = m(c, a); next.push([a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]); }
+      faces = next;
+    }
+    return (icoCache[level] = { verts, faces });
+  }
+  function surfacePoint(partKey, dir, lift = 0.035) {
+    const p = PARTS[partKey], d = norm(dir);
+    const local = [p.r[0] * d[0], p.r[1] * d[1], p.r[2] * d[2]];
+    const w = rotV(local, p.rot);
+    const n = norm(rotV([d[0] / p.r[0], d[1] / p.r[1], d[2] / p.r[2]], p.rot));
+    const off = (p.fl || 0) * 1.1 + lift;
+    return { p: [p.c[0] + w[0] + n[0] * off, p.c[1] + w[1] + n[1] * off, p.c[2] + w[2] + n[2] * off], n };
+  }
+  function buildDog() {
+    const P = [], C = [], I = [];
+    for (const key in PARTS) {
+      const pt = PARTS[key], ico = icosphere(pt.fl ? 4 : 3), base = P.length / 3;
+      const flag = pt.gloss ? 2 : (pt.fl ? 1 : 0);
+      for (const v of ico.verts) {
+        const local = [v[0] * pt.r[0], v[1] * pt.r[1], v[2] * pt.r[2]];
+        let w = rotV(local, pt.rot); w = [w[0] + pt.c[0], w[1] + pt.c[1], w[2] + pt.c[2]];
+        if (pt.fl) {
+          const n = norm(rotV([v[0] / pt.r[0], v[1] / pt.r[1], v[2] / pt.r[2]], pt.rot));
+          const f = 0.62 * vnoise(w[0] * 7 + 11, w[1] * 7, w[2] * 7) + 0.38 * vnoise(w[0] * 19, w[1] * 19 + 5, w[2] * 19);
+          const d = pt.fl * (0.35 + 1.5 * (f - 0.5));
+          w = [w[0] + n[0] * d, w[1] + n[1] * d, w[2] + n[2] * d];
+        }
+        P.push(w[0], w[1], w[2]); C.push(pt.col[0], pt.col[1], pt.col[2], flag);
+      }
+      for (const f of ico.faces) I.push(f[0] + base, f[1] + base, f[2] + base);
+    }
+    const N = new Float32Array(P.length);
+    for (let i = 0; i < I.length; i += 3) {
+      const a = I[i] * 3, b = I[i + 1] * 3, c = I[i + 2] * 3;
+      const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2];
+      const vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2];
+      const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      for (const k of [a, b, c]) { N[k] += nx; N[k + 1] += ny; N[k + 2] += nz; }
+    }
+    for (let i = 0; i < N.length; i += 3) { const l = Math.hypot(N[i], N[i + 1], N[i + 2]) || 1; N[i] /= l; N[i + 1] /= l; N[i + 2] /= l; }
+    return { pos: new Float32Array(P), nrm: N, col: new Float32Array(C), idx: new Uint32Array(I) };
+  }
+  function buildGround() {
+    // Sombra (abanico con alfa radial) + anillo orbital menta, como en el mockup
+    const P = [], C = [], I = [];
+    const seg = 64, mint = [0.18, 0.83, 0.75];
+    P.push(0, 0.001, -0.03); C.push(0, 0, 0, 0.5);
+    for (let i = 0; i <= seg; i++) { const a = i / seg * Math.PI * 2; P.push(Math.cos(a) * 0.36, 0.001, -0.03 + Math.sin(a) * 0.66); C.push(0, 0, 0, 0); }
+    for (let i = 1; i <= seg; i++) I.push(0, i, i + 1);
+    const ring = (R, w, alpha) => {
+      const b = P.length / 3;
+      for (let i = 0; i <= 128; i++) { const a = i / 128 * Math.PI * 2, c = Math.cos(a), s = Math.sin(a); P.push(c * (R - w), 0.003, s * (R - w), c * (R + w), 0.003, s * (R + w)); C.push(...mint, alpha, ...mint, alpha); }
+      for (let i = 0; i < 128; i++) { const k = b + i * 2; I.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+    };
+    ring(0.98, 0.008, 0.95); ring(1.12, 0.004, 0.35);
+    return { pos: new Float32Array(P), col: new Float32Array(C), idx: new Uint16Array(I) };
+  }
+  // ── matrices (column-major) ──
+  function perspective(o, fovy, aspect, near, far, shift) {
+    const f = 1 / Math.tan(fovy / 2), nf = 1 / (near - far); o.fill(0);
+    o[0] = f / aspect; o[5] = f; o[10] = (far + near) * nf; o[11] = -1; o[14] = 2 * far * near * nf; o[9] = -shift; return o;
+  }
+  function lookAt(o, e, c) {
+    let zx = e[0] - c[0], zy = e[1] - c[1], zz = e[2] - c[2], l = Math.hypot(zx, zy, zz); zx /= l; zy /= l; zz /= l;
+    let xx = zz, xy = 0, xz = -zx; l = Math.hypot(xx, xy, xz) || 1; xx /= l; xz /= l; // up = (0,1,0)
+    const yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
+    o[0] = xx; o[1] = yx; o[2] = zx; o[3] = 0; o[4] = xy; o[5] = yy; o[6] = zy; o[7] = 0; o[8] = xz; o[9] = yz; o[10] = zz; o[11] = 0;
+    o[12] = -(xx * e[0] + xy * e[1] + xz * e[2]); o[13] = -(yx * e[0] + yy * e[1] + yz * e[2]); o[14] = -(zx * e[0] + zy * e[1] + zz * e[2]); o[15] = 1; return o;
+  }
+  function mul(o, a, b) {
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++)
+      o[j * 4 + i] = a[i] * b[j * 4] + a[4 + i] * b[j * 4 + 1] + a[8 + i] * b[j * 4 + 2] + a[12 + i] * b[j * 4 + 3];
+    return o;
+  }
+
+  const VS = `attribute vec3 aPos; attribute vec3 aNrm; attribute vec4 aCol; uniform mat4 uVP;
+    varying vec3 vN; varying vec3 vP; varying vec4 vC;
+    void main(){ vN=aNrm; vP=aPos; vC=aCol; gl_Position=uVP*vec4(aPos,1.0); }`;
+  const FS = `#ifdef GL_FRAGMENT_PRECISION_HIGH
+    precision highp float;
+    #else
+    precision mediump float;
+    #endif
+    varying vec3 vN; varying vec3 vP; varying vec4 vC; uniform vec3 uEye; uniform float uUnlit;
+    float h(vec3 p){ p=fract(p*0.3183099+0.1); p*=17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+    float n3(vec3 x){ vec3 i=floor(x); vec3 f=fract(x); f=f*f*(3.0-2.0*f);
+      return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),
+                 mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z); }
+    void main(){
+      if(uUnlit>0.5){ gl_FragColor=vec4(vC.rgb*vC.a, vC.a); return; }
+      vec3 N=normalize(vN); vec3 V=normalize(uEye-vP); vec3 L=normalize(vec3(0.45,0.85,0.55));
+      float fur = vC.a>1.5 ? 0.0 : vC.a; float gloss = vC.a>1.5 ? 1.0 : 0.0;
+      float t = n3(vP*70.0)*0.55 + n3(vP*150.0)*0.45;
+      vec3 base = vC.rgb * mix(1.0, 0.80+0.32*t, fur);
+      float ndl = dot(N,L); float wrap = ndl*0.5+0.5;
+      float diff = mix(max(ndl,0.0), wrap*wrap, 0.55+0.3*fur);
+      float hemi = N.y*0.5+0.5;
+      vec3 amb = mix(vec3(0.30,0.25,0.24), vec3(0.58,0.66,0.86), hemi)*0.62;
+      float rim = pow(1.0-max(dot(N,V),0.0), 2.6);
+      float ao = mix(0.62, 1.0, smoothstep(0.0, 0.32, vP.y));
+      vec3 col = base*(amb + vec3(1.0,0.95,0.88)*diff*0.78)*ao;
+      col += vec3(0.38,0.58,1.0)*rim*(0.28+0.22*fur);
+      float spec = pow(max(dot(reflect(-L,N),V),0.0), 48.0);
+      col += vec3(spec)*gloss*0.9;
+      gl_FragColor = vec4(col, 1.0);
+    }`;
+
+  let gl, prog, loc, dog, ground, canvas, wrap, hsLayer, ready = false, running = false, raf = 0;
+  const VP = new Float32Array(16), Pm = new Float32Array(16), Vm = new Float32Array(16);
+  const cam = { yaw: 52, pitch: 13, dist: 3.6, tx: 0, ty: 0.66, tz: 0.04, shift: 0 };
+  const goal = { ...cam };
+  const HOME = { yaw: 52, pitch: 13, dist: 3.6, tx: 0, ty: 0.66, tz: 0.04 };
+  let vel = { yaw: 0, pitch: 0 }, auto = false, lastInteract = 0, sheetOpen = false, eye = [0, 0, 0];
+  const anchors = [];
+  let onSelect = () => {}, selected = null, alertZones = new Set();
+
+  function compile(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+  function upload(m, withNormals) {
+    const o = { n: m.idx.length, type: m.idx instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT };
+    o.pos = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, o.pos); gl.bufferData(gl.ARRAY_BUFFER, m.pos, gl.STATIC_DRAW);
+    o.col = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, o.col); gl.bufferData(gl.ARRAY_BUFFER, m.col, gl.STATIC_DRAW);
+    if (withNormals) { o.nrm = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, o.nrm); gl.bufferData(gl.ARRAY_BUFFER, m.nrm, gl.STATIC_DRAW); }
+    o.idx = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, o.idx); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, m.idx, gl.STATIC_DRAW);
+    return o;
+  }
+
+  function init(opts) {
+    canvas = $('#gl'); wrap = $('#viewer'); hsLayer = $('#hotspots'); onSelect = opts.onSelect;
+    gl = canvas.getContext('webgl', { antialias: true, alpha: true, premultipliedAlpha: true });
+    if (!gl || (!gl.getExtension('OES_element_index_uint'))) {
+      wrap.insertAdjacentHTML('beforeend', '<div class="nogl">Este navegador no puede mostrar gráficos 3D (WebGL). Prueba con Chrome o Safari actualizados.</div>');
+      return false;
+    }
+    prog = gl.createProgram();
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+    gl.useProgram(prog);
+    loc = { pos: gl.getAttribLocation(prog, 'aPos'), nrm: gl.getAttribLocation(prog, 'aNrm'), col: gl.getAttribLocation(prog, 'aCol'),
+            vp: gl.getUniformLocation(prog, 'uVP'), eye: gl.getUniformLocation(prog, 'uEye'), unlit: gl.getUniformLocation(prog, 'uUnlit') };
+    dog = upload(buildDog(), true);
+    ground = upload(buildGround(), false);
+
+    for (const z of ZONES) {
+      const a = surfacePoint(z.part, z.dir);
+      const el = document.createElement('button');
+      el.className = 'hs'; el.setAttribute('aria-label', 'Zona: ' + z.name); el.dataset.zone = z.id;
+      el.addEventListener('pointerdown', e => e.stopPropagation());
+      el.addEventListener('click', () => onSelect(z.id));
+      hsLayer.appendChild(el);
+      anchors.push({ id: z.id, p: a.p, n: a.n, el });
+    }
+    const label = document.createElement('div'); label.className = 'hs-label'; label.hidden = true; hsLayer.appendChild(label);
+    anchors.label = label;
+    bindInput();
+    ready = true;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) auto = false;
+    return true;
+  }
+
+  function bindInput() {
+    const pts = new Map(); let pinch0 = 0, moved = 0;
+    wrap.addEventListener('pointerdown', e => {
+      if (e.target.closest('.vbtn, .zone-sheet, .hs')) return;
+      wrap.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = 0;
+      vel.yaw = vel.pitch = 0; lastInteract = performance.now();
+      if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); }
+      $('#hint').style.opacity = 0;
+    });
+    wrap.addEventListener('pointermove', e => {
+      if (!pts.has(e.pointerId)) return;
+      const prev = pts.get(e.pointerId), cur = { x: e.clientX, y: e.clientY };
+      lastInteract = performance.now();
+      if (pts.size === 1) {
+        const dx = cur.x - prev.x, dy = cur.y - prev.y; moved += Math.abs(dx) + Math.abs(dy);
+        const dyaw = -dx * 0.42, dp = dy * 0.3;
+        goal.yaw += dyaw; goal.pitch = Math.max(-8, Math.min(70, goal.pitch + dp));
+        vel.yaw = vel.yaw * 0.5 + dyaw * 30; vel.pitch = vel.pitch * 0.5 + dp * 30;
+      }
+      pts.set(e.pointerId, cur);
+      if (pts.size === 2) {
+        const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (pinch0 > 0 && d > 0) goal.dist = clampDist(goal.dist * pinch0 / d);
+        pinch0 = d; vel.yaw = vel.pitch = 0;
+      }
+    });
+    const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch0 = 0; if (pts.size === 1) vel.yaw = vel.pitch = 0; };
+    wrap.addEventListener('pointerup', up); wrap.addEventListener('pointercancel', up);
+    wrap.addEventListener('wheel', e => { if (e.target.closest('.zone-sheet')) return; e.preventDefault(); goal.dist = clampDist(goal.dist * Math.exp(e.deltaY * 0.0012)); lastInteract = performance.now(); }, { passive: false });
+  }
+  const clampDist = d => Math.max(1.45, Math.min(5.6, d));
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(1, Math.round(wrap.clientWidth * dpr)), h = Math.max(1, Math.round(wrap.clientHeight * dpr));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  }
+  function bindMesh(m, withNormals) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, m.pos); gl.enableVertexAttribArray(loc.pos); gl.vertexAttribPointer(loc.pos, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, m.col); gl.enableVertexAttribArray(loc.col); gl.vertexAttribPointer(loc.col, 4, gl.FLOAT, false, 0, 0);
+    if (withNormals) { gl.bindBuffer(gl.ARRAY_BUFFER, m.nrm); gl.enableVertexAttribArray(loc.nrm); gl.vertexAttribPointer(loc.nrm, 3, gl.FLOAT, false, 0, 0); }
+    else { gl.disableVertexAttribArray(loc.nrm); gl.vertexAttrib3f(loc.nrm, 0, 1, 0); }
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.idx);
+  }
+
+  let last = 0;
+  function frame(t) {
+    raf = requestAnimationFrame(frame);
+    const dt = Math.min(0.05, last ? (t - last) / 1000 : 0.016); last = t;
+    const idle = t - lastInteract;
+    if (idle > 40 && (Math.abs(vel.yaw) > 0.5 || Math.abs(vel.pitch) > 0.5)) {
+      goal.yaw += vel.yaw * dt; goal.pitch = Math.max(-8, Math.min(70, goal.pitch + vel.pitch * dt));
+      const k = Math.exp(-4.5 * dt); vel.yaw *= k; vel.pitch *= k;
+    }
+    if (auto && idle > 1500) goal.yaw += 22 * dt;
+    goal.shift = sheetOpen ? 0.46 : 0;
+    const k = 1 - Math.exp(-9 * dt);
+    for (const key of ['yaw', 'pitch', 'dist', 'tx', 'ty', 'tz', 'shift']) cam[key] += (goal[key] - cam[key]) * k;
+
+    resize();
+    const W = canvas.width, H = canvas.height;
+    gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    const cy = Math.cos(cam.yaw * D), sy = Math.sin(cam.yaw * D), cp = Math.cos(cam.pitch * D), sp = Math.sin(cam.pitch * D);
+    eye = [cam.tx + cam.dist * cp * sy, cam.ty + cam.dist * sp, cam.tz + cam.dist * cp * cy];
+    perspective(Pm, 34 * D, W / H, 0.05, 50, cam.shift); lookAt(Vm, eye, [cam.tx, cam.ty, cam.tz]); mul(VP, Pm, Vm);
+    gl.uniformMatrix4fv(loc.vp, false, VP); gl.uniform3fv(loc.eye, eye);
+
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.disable(gl.DEPTH_TEST); gl.uniform1f(loc.unlit, 1);
+    bindMesh(ground, false); gl.drawElements(gl.TRIANGLES, ground.n, ground.type, 0);
+    gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.disable(gl.BLEND); gl.uniform1f(loc.unlit, 0);
+    bindMesh(dog, true); gl.drawElements(gl.TRIANGLES, dog.n, dog.type, 0);
+
+    placeHotspots();
+  }
+
+  function placeHotspots() {
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    for (const a of anchors) {
+      const [x, y, z] = a.p;
+      const cx = VP[0] * x + VP[4] * y + VP[8] * z + VP[12], cyy = VP[1] * x + VP[5] * y + VP[9] * z + VP[13], cw = VP[3] * x + VP[7] * y + VP[11] * z + VP[15];
+      const sx = (cx / cw * 0.5 + 0.5) * w, sy = (1 - (cyy / cw * 0.5 + 0.5)) * h;
+      const v = norm([eye[0] - x, eye[1] - y, eye[2] - z]);
+      const facing = a.n[0] * v[0] + a.n[1] * v[1] + a.n[2] * v[2];
+      a.el.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px)`;
+      a.el.classList.toggle('back', facing < 0.05 && a.id !== selected);
+      a.el.classList.toggle('alert', alertZones.has(a.id));
+      a.el.classList.toggle('sel', a.id === selected);
+      if (a.id === selected) { anchors.label.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px) translate(-50%, -100%)`; }
+    }
+  }
+
+  function focus(id) {
+    const a = anchors.find(x => x.id === id); if (!a) return;
+    selected = id;
+    anchors.label.textContent = ZONE_BY_ID[id].name; anchors.label.hidden = false;
+    const n = a.n, horiz = Math.hypot(n[0], n[2]);
+    if (horiz > 0.25) { const target = Math.atan2(n[0], n[2]) / D; goal.yaw = cam.yaw + (((target - cam.yaw) % 360) + 540) % 360 - 180; }
+    goal.pitch = Math.max(2, Math.min(62, Math.asin(Math.max(-1, Math.min(1, n[1]))) / D + 8));
+    goal.tx = a.p[0]; goal.ty = a.p[1]; goal.tz = a.p[2];
+    goal.dist = 2.7; vel.yaw = vel.pitch = 0; lastInteract = performance.now();
+  }
+  function clearSelection() {
+    selected = null; anchors.label.hidden = true;
+    goal.tx = HOME.tx; goal.ty = HOME.ty; goal.tz = HOME.tz; goal.dist = HOME.dist;
+  }
+  function reset() { Object.assign(goal, HOME); vel.yaw = vel.pitch = 0; }
+  function toggleZoom() { goal.dist = goal.dist > 2.8 ? 2.0 : HOME.dist; lastInteract = performance.now(); }
+  function toggleAuto() { auto = !auto; lastInteract = 0; return auto; }
+  function setSheet(open) { sheetOpen = open; }
+  function setAlerts(ids) { alertZones = new Set(ids); }
+  function start() { if (!ready || running) return; running = true; last = 0; raf = requestAnimationFrame(frame); }
+  function stop() { running = false; cancelAnimationFrame(raf); }
+  return { init, start, stop, focus, clearSelection, reset, toggleZoom, toggleAuto, setSheet, setAlerts };
+})();
+
+/* ════════════════════════════ Mapa (teselas OSM + mapa ilustrado de respaldo) ════════════════════════════ */
+const GVMap = (() => {
+  const TS = 256;
+  let wrap, cv, ctx, tilesEl, pinsEl, center = { ...DEFAULT_CENTER }, zoom = 14.6, W = 0, H = 0;
+  let places = [], me = null, selectedId = null, filter = 'all', tilesOk = false, streets = null, onPick = () => {};
+  const tileImgs = new Map();
+  const proj = (lat, lng, z) => { const s = TS * Math.pow(2, z), sn = Math.sin(lat * Math.PI / 180); return [(lng + 180) / 360 * s, (0.5 - Math.log((1 + sn) / (1 - sn)) / (4 * Math.PI)) * s]; };
+  const unproj = (x, y, z) => { const s = TS * Math.pow(2, z), n = Math.PI - 2 * Math.PI * y / s; return [180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))), x / s * 360 - 180]; };
+  const toScreen = (lat, lng) => { const c = proj(center.lat, center.lng, zoom), p = proj(lat, lng, zoom); return [p[0] - c[0] + W / 2, p[1] - c[1] + H / 2]; };
+  const fromScreen = (x, y) => { const c = proj(center.lat, center.lng, zoom); const r = unproj(c[0] + x - W / 2, c[1] + y - H / 2, zoom); return { lat: r[0], lng: r[1] }; };
+  const offset = (o, dx, dy) => ({ lat: o.lat + dy / 111320, lng: o.lng + dx / (111320 * Math.cos(o.lat * Math.PI / 180)) });
+  function hav(a, b) { const R = 6371000, r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r; const s = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(s)); }
+
+  function genStreets(o) {
+    // Calles en metros alrededor del origen, con un ángulo leve, una avenida diagonal, un río y parques.
+    const rnd = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+    const th = 14 * Math.PI / 180, cs = Math.cos(th), sn = Math.sin(th), R = 2600;
+    const rot = (x, y) => [x * cs - y * sn, x * sn + y * cs];
+    const L = (pts) => pts.map(([x, y]) => offset(o, x, y));
+    const minor = [], major = [], parks = [];
+    for (let k = -R; k <= R; k += 130) {
+      const isMaj = Math.round(k / 130) % 4 === 0;
+      const a = L([rot(k, -R), rot(k, R)]), b = L([rot(-R, k), rot(R, k)]);
+      (isMaj ? major : minor).push(a, b);
+    }
+    major.push(L([rot(-R, -R * 0.8), rot(R, R * 0.6)]));
+    const river = []; for (let y = -R; y <= R; y += 80) river.push([-1500 + Math.sin(y / 520) * 260 + y * 0.18, y]);
+    for (let i = 0; i < 7; i++) { const cx = (rnd() - 0.5) * 3600, cy = (rnd() - 0.5) * 3600, w = 120 + rnd() * 160, h = 100 + rnd() * 140; parks.push(L([rot(cx, cy), rot(cx + w, cy), rot(cx + w, cy + h), rot(cx, cy + h)])); }
+    return { minor, major, river: L(river), parks };
+  }
+
+  function drawBg() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#101A2E'; ctx.fillRect(0, 0, W, H);
+    if (!streets || tilesOk) return;
+    const mpp = 156543.03 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom);
+    const path = (pts) => { ctx.beginPath(); pts.forEach((p, i) => { const s = toScreen(p.lat, p.lng); i ? ctx.lineTo(s[0], s[1]) : ctx.moveTo(s[0], s[1]); }); };
+    ctx.fillStyle = '#12352F'; for (const p of streets.parks) { path(p); ctx.closePath(); ctx.fill(); }
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#173A63'; ctx.lineWidth = Math.max(6, 70 / mpp); path(streets.river); ctx.stroke();
+    ctx.strokeStyle = '#1E2A42'; ctx.lineWidth = Math.max(1.5, 10 / mpp); for (const s of streets.minor) { path(s); ctx.stroke(); }
+    ctx.strokeStyle = '#2B3A5A'; ctx.lineWidth = Math.max(3, 20 / mpp); for (const s of streets.major) { path(s); ctx.stroke(); }
+  }
+
+  function drawTiles() {
+    const z0 = Math.max(0, Math.min(19, Math.round(zoom))), scale = Math.pow(2, zoom - z0), n = Math.pow(2, z0);
+    const c = proj(center.lat, center.lng, z0);
+    const x0 = Math.floor((c[0] - W / 2 / scale) / TS), x1 = Math.floor((c[0] + W / 2 / scale) / TS);
+    const y0 = Math.floor((c[1] - H / 2 / scale) / TS), y1 = Math.floor((c[1] + H / 2 / scale) / TS);
+    const want = new Set();
+    for (let tx = x0; tx <= x1; tx++) for (let ty = y0; ty <= y1; ty++) {
+      if (ty < 0 || ty >= n) continue;
+      const key = z0 + '/' + (((tx % n) + n) % n) + '/' + ty; want.add(key + '@' + tx);
+      let img = tileImgs.get(key + '@' + tx);
+      if (!img) {
+        img = new Image(); img.alt = ''; img.decoding = 'async'; img.style.opacity = 0;
+        img.onload = () => { img.style.opacity = 1; if (!tilesOk) { tilesOk = true; $('#attrib').textContent = '© OpenStreetMap'; render(); } };
+        img.onerror = () => { img.remove(); };
+        img.src = 'https://tile.openstreetmap.org/' + key + '.png';
+        tileImgs.set(key + '@' + tx, img); tilesEl.appendChild(img);
+      }
+      const sx = (tx * TS - c[0]) * scale + W / 2, sy = (ty * TS - c[1]) * scale + H / 2;
+      img.style.transform = `translate(${sx}px, ${sy}px) scale(${scale * 1.002})`;
+    }
+    for (const [k, img] of tileImgs) if (!want.has(k)) { img.remove(); tileImgs.delete(k); }
+  }
+
+  const PIN_SHAPE = c => `<svg class="shape" viewBox="0 0 34 42"><path d="M17 41C17 41 2 26.5 2 16.5a15 15 0 0 1 30 0C32 26.5 17 41 17 41z" fill="${c}" stroke="#fff" stroke-width="2"/></svg>`;
+  const placeColor = p => p.sp ? '#F97316' : (p.type === 'vet' ? '#0D9488' : '#2563EB');
+  const placeIcon = p => p.sp ? 'star' : (p.type === 'vet' ? 'cross' : 'scissors');
+
+  function drawPins() {
+    pinsEl.querySelectorAll('.pin').forEach(el => {
+      const p = places.find(x => x.id === el.dataset.id); if (!p) return;
+      const s = toScreen(p.lat, p.lng);
+      el.style.transform = `translate(${s[0].toFixed(1)}px, ${s[1].toFixed(1)}px)`;
+      el.hidden = !(filter === 'all' || p.type === filter);
+      el.classList.toggle('sel', p.id === selectedId);
+    });
+    const meEl = $('#meDot');
+    if (meEl) { if (me) { const s = toScreen(me.lat, me.lng); meEl.style.transform = `translate(${s[0].toFixed(1)}px, ${s[1].toFixed(1)}px)`; meEl.hidden = false; } else meEl.hidden = true; }
+  }
+  function render() { if (!W) return; drawBg(); drawTiles(); drawPins(); }
+
+  function buildPins() {
+    pinsEl.innerHTML = '<div class="me" id="meDot" hidden></div>' + places.map(p =>
+      `<button class="pin${p.sp ? ' sp' : ''}" data-id="${p.id}" aria-label="${esc(p.name)}">${PIN_SHAPE(placeColor(p))}${icon(placeIcon(p))}</button>`).join('');
+    pinsEl.querySelectorAll('.pin').forEach(el => {
+      el.addEventListener('pointerdown', e => e.stopPropagation());
+      el.addEventListener('click', () => onPick(el.dataset.id, true));
+    });
+  }
+
+  function setOrigin(o, isMe, acc) {
+    me = isMe ? { lat: o.lat, lng: o.lng, acc } : null;
+    center = { lat: o.lat, lng: o.lng };
+    places = DEMO_PLACES.map(p => { const q = offset(o, p.dx, p.dy); return { ...p, lat: q.lat, lng: q.lng, dist: hav(o, q) }; });
+    streets = genStreets(o);
+    buildPins(); render();
+  }
+
+  function bind() {
+    const pts = new Map(); let pinch0 = 0, mid = null;
+    wrap.addEventListener('pointerdown', e => {
+      if (e.target.closest('.map-ui button, .map-filters')) return;
+      wrap.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); }
+    });
+    wrap.addEventListener('pointermove', e => {
+      if (!pts.has(e.pointerId)) return;
+      const prev = pts.get(e.pointerId), cur = { x: e.clientX, y: e.clientY }; pts.set(e.pointerId, cur);
+      if (pts.size === 1) {
+        const c = proj(center.lat, center.lng, zoom); const r = unproj(c[0] - (cur.x - prev.x), c[1] - (cur.y - prev.y), zoom);
+        center = { lat: r[0], lng: r[1] }; render();
+      } else if (pts.size === 2) {
+        const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y), rect = wrap.getBoundingClientRect();
+        mid = [(a.x + b.x) / 2 - rect.left, (a.y + b.y) / 2 - rect.top];
+        if (pinch0 > 0) zoomAround(mid, zoom + Math.log2(d / pinch0)); pinch0 = d;
+      }
+    });
+    const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch0 = 0; };
+    wrap.addEventListener('pointerup', up); wrap.addEventListener('pointercancel', up);
+    wrap.addEventListener('wheel', e => { e.preventDefault(); const r = wrap.getBoundingClientRect(); zoomAround([e.clientX - r.left, e.clientY - r.top], zoom - e.deltaY * 0.0022); }, { passive: false });
+    new ResizeObserver(() => { W = wrap.clientWidth; H = wrap.clientHeight; render(); }).observe(wrap);
+  }
+  function zoomAround(pt, z) {
+    z = Math.max(12, Math.min(18.5, z)); const g = fromScreen(pt[0], pt[1]); zoom = z;
+    const s = toScreen(g.lat, g.lng), c = proj(center.lat, center.lng, zoom), r = unproj(c[0] + s[0] - pt[0], c[1] + s[1] - pt[1], zoom);
+    center = { lat: r[0], lng: r[1] }; render();
+  }
+  function flyTo(lat, lng, z = zoom) {
+    const from = { ...center }, z0 = zoom, t0 = performance.now(), dur = 450;
+    const step = t => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      center = { lat: from.lat + (lat - from.lat) * e, lng: from.lng + (lng - from.lng) * e }; zoom = z0 + (z - z0) * e; render();
+      if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
+
+  function init(opts) {
+    wrap = $('#mapWrap'); cv = $('#mapBg'); ctx = cv.getContext('2d'); tilesEl = $('#mapTiles'); pinsEl = $('#mapPins'); onPick = opts.onPick;
+    W = wrap.clientWidth; H = wrap.clientHeight;
+    bind();
+    $('#mapIn').addEventListener('click', () => zoomAround([W / 2, H / 2], zoom + 1));
+    $('#mapOut').addEventListener('click', () => zoomAround([W / 2, H / 2], zoom - 1));
+  }
+  return {
+    init, setOrigin, render, flyTo,
+    setFilter(f) { filter = f; render(); },
+    select(id) { selectedId = id; const p = places.find(x => x.id === id); if (p) flyTo(p.lat, p.lng, Math.max(zoom, 15.5)); else render(); },
+    places: () => places, hasMe: () => !!me, recenter() { const o = me || center; flyTo(o.lat, o.lng, 14.6); },
+  };
+})();
+
+/* ════════════════════════════ App ════════════════════════════ */
+const App = (() => {
+  let mapReady = false, toastTimer = 0, gpsTried = false;
+  const activeConds = () => state.conds;
+  const zoneAlerts = id => state.conds.filter(c => c.zone === id);
+  const save = () => { store.set('conds', state.conds); store.set('history', state.history); store.set('premium', state.premium); };
+
+  function toast(msg) {
+    $('#toastText').textContent = msg; $('#toast').hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 3200);
+  }
+
+  function setTab(tab) {
+    if (!['visor', 'carnet', 'mapa', 'premium'].includes(tab)) tab = 'visor';
+    state.tab = tab;
+    document.querySelectorAll('.view').forEach(v => { v.hidden = v.id !== 'view-' + tab; });
+    const tabs = [...document.querySelectorAll('.tab')];
+    tabs.forEach(b => b.toggleAttribute('aria-current', b.dataset.tab === tab));
+    tabs.forEach(b => { if (b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); });
+    const i = tabs.findIndex(b => b.dataset.tab === tab);
+    $('#tabInd').style.left = `calc(${i * 25}% + 5.5%)`;
+    if (tab === 'visor') GV3D.start(); else GV3D.stop();
+    if (tab === 'mapa') openMap();
+    try { history.replaceState(null, '', '#' + tab); } catch (e) { /* sin historial */ }
+  }
+
+  /* ── Alertas ── */
+  function renderAlerts() {
+    const conds = activeConds();
+    $('#bellCount').textContent = conds.length; $('#bellCount').hidden = conds.length === 0;
+    const order = { alta: 0, media: 1, baja: 2 };
+    const zoned = conds.filter(c => c.zone !== 'general').sort((a, b) => order[a.sev] - order[b.sev]);
+    const top = zoned[0] || conds[0];
+    const banner = $('#alertBanner');
+    if (!top) { banner.hidden = true; }
+    else {
+      banner.hidden = false;
+      const where = top.zone !== 'general' ? ' en ' + (top.zone === 'patas' ? 'las patas' : top.zone === 'orejas' ? 'las orejas' : top.zone === 'cara' ? 'la cara' : top.zone === 'cola' ? 'la cola' : top.zone === 'copete' ? 'el copete' : 'el ' + ZONE_BY_ID[top.zone].name.toLowerCase()) : '';
+      $('#alertText').textContent = `¡Atención: Rocky tiene ${top.name.toLowerCase()}${where}!`;
+      $('#alertSub').textContent = conds.length > 1 ? `+${conds.length - 1} alerta${conds.length > 2 ? 's' : ''} más · Toca para ver el carnet` : 'Toca para ver el carnet médico';
+    }
+    GV3D.setAlerts(conds.filter(c => c.zone !== 'general').map(c => c.zone));
+  }
+
+  /* ── Visor ── */
+  function renderBreeds() {
+    $('#breedChips').innerHTML = BREEDS.map((b, i) => {
+      if (i === 0) return `<button class="chip on" role="listitem" data-b="${b}">${b}<small>Gratis</small></button>`;
+      return `<button class="chip ${state.premium ? '' : 'locked'}" role="listitem" data-b="${b}">${state.premium ? '' : icon('lock')}${b}</button>`;
+    }).join('');
+    $('#breedChips').querySelectorAll('.chip').forEach((el, i) => el.addEventListener('click', () => {
+      if (i === 0) return;
+      if (state.premium) toast(`El modelo 3D de ${el.dataset.b} está en producción.`);
+      else paywall(el.dataset.b);
+    }));
+  }
+
+  function openZone(id) {
+    const z = ZONE_BY_ID[id]; if (!z) return;
+    state.zone = id;
+    const idx = ZONES.indexOf(z), alerts = zoneAlerts(id), sensitive = z.sensitive || alerts.length > 0;
+    $('#zsTitle').textContent = sensitive ? `${z.name} (Zona Sensible)` : z.name;
+    $('#zsTitle').classList.toggle('normal', !sensitive);
+    $('#zsTag').hidden = true;
+    $('#zsCount').textContent = `Zona ${idx + 1} de ${ZONES.length} · Poodle`;
+    $('#zsBlade').textContent = z.blade; $('#zsScissor').textContent = z.scissor; $('#zsDir').textContent = z.direction; $('#zsNotes').textContent = z.notes;
+    $('#zsAlerts').innerHTML = alerts.map(c => `<div class="zs-alert">${icon('alert')}<div><b>Carnet: ${esc(c.name)}</b> · gravedad ${esc(c.sev)}<br>${esc(c.note || '')} <button data-go="carnet">Ver carnet</button></div></div>`).join('');
+    $('#zsAlerts').querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => setTab('carnet')));
+    const prev = ZONES[(idx - 1 + ZONES.length) % ZONES.length], next = ZONES[(idx + 1) % ZONES.length];
+    $('#zsPrevName').textContent = prev.name; $('#zsNextName').textContent = next.name;
+    $('#zsPrev').onclick = () => openZone(prev.id); $('#zsNext').onclick = () => openZone(next.id);
+    $('#zoneSheet').classList.remove('closed');
+    $('#hint').style.opacity = 0;
+    GV3D.setSheet(true); GV3D.focus(id);
+  }
+  function closeZone() {
+    state.zone = null; $('#zoneSheet').classList.add('closed'); GV3D.setSheet(false); GV3D.clearSelection();
+  }
+
+  /* ── Carnet ── */
+  const sevLabel = { alta: 'Alta', media: 'Media', baja: 'Baja' };
+  const zoneName = id => id === 'general' ? 'Todo el cuerpo' : (ZONE_BY_ID[id] ? ZONE_BY_ID[id].name : id);
+  function renderCarnet() {
+    const list = $('#condList');
+    list.innerHTML = state.conds.length ? state.conds.map(c => `
+      <div class="card cond ${c.sev}">
+        <div class="cond-top"><h4>${esc(c.name)}</h4><span class="sev sev-${c.sev}">${sevLabel[c.sev]}</span></div>
+        <p>${esc(c.note || '')}</p>
+        <div class="meta">${esc(zoneName(c.zone))} · desde ${esc(c.since)}</div>
+        <div class="cond-actions">
+          ${c.zone !== 'general' ? `<button data-see="${c.zone}">${icon('eye')}Ver en 3D</button>` : ''}
+          <button data-resolve="${c.id}">${icon('check')}Marcar resuelta</button>
+        </div>
+      </div>`).join('') : '<div class="card empty">Sin alertas activas. Rocky está al día.</div>';
+    list.querySelectorAll('[data-see]').forEach(b => b.addEventListener('click', () => { setTab('visor'); setTimeout(() => openZone(b.dataset.see), 80); }));
+    list.querySelectorAll('[data-resolve]').forEach(b => b.addEventListener('click', () => {
+      const c = state.conds.find(x => x.id === b.dataset.resolve); if (!c) return;
+      state.conds = state.conds.filter(x => x !== c);
+      state.history.unshift({ name: c.name, zone: c.zone, date: 'Resuelta hoy' });
+      save(); refresh(); toast(`"${c.name}" pasó al historial.`);
+    }));
+    $('#historyList').innerHTML = state.history.length ? state.history.map(hh => `
+      <div class="row"><div><b>${esc(hh.name)}</b><span class="sub">${esc(zoneName(hh.zone))} · ${esc(hh.date)}</span></div><span class="sev ok">Resuelta</span></div>`).join('')
+      : '<div class="empty">Sin registros anteriores.</div>';
+  }
+
+  function addCondition() {
+    openModal(`
+      <div class="grab"></div>
+      <h3>Agregar afección al carnet</h3>
+      <p>Se mostrará como alerta en el visor 3D sobre la zona elegida.</p>
+      <form id="condForm" style="display:flex;flex-direction:column;gap:12px">
+        <label class="field" for="fName">Afección<input id="fName" required maxlength="60" placeholder="Ej.: Hongos entre los dedos"></label>
+        <label class="field" for="fZone">Zona del cuerpo<select id="fZone">${ZONES.map(z => `<option value="${z.id}">${z.name}</option>`).join('')}<option value="general">Todo el cuerpo</option></select></label>
+        <div class="field">Gravedad<div class="seg">
+          <label><input type="radio" name="sev" value="alta" id="sevA"><span>Alta</span></label>
+          <label><input type="radio" name="sev" value="media" id="sevM" checked><span>Media</span></label>
+          <label><input type="radio" name="sev" value="baja" id="sevB"><span>Baja</span></label></div></div>
+        <label class="field" for="fNote">Indicaciones para el groomer<textarea id="fNote" maxlength="160" placeholder="Ej.: Secar bien entre los dedos y no usar cuchilla corta."></textarea></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar alerta</button>
+        </div>
+      </form>`);
+    $('#fZone').value = 'patas';
+    $('#condForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const name = $('#fName').value.trim(); if (!name) return;
+      const c = { id: 'c' + Date.now(), name, zone: $('#fZone').value, sev: (document.querySelector('input[name=sev]:checked') || {}).value || 'media', since: 'Hoy', note: $('#fNote').value.trim() };
+      state.conds.unshift(c); save(); closeModal(); refresh();
+      toast(c.zone === 'general' ? 'Alerta guardada en el carnet.' : `Alerta guardada. Se marcó ${zoneName(c.zone).toLowerCase()} en el visor 3D.`);
+    });
+    setTimeout(() => $('#fName').focus(), 50);
+  }
+
+  /* ── Modal ── */
+  function openModal(html) {
+    $('#modalCard').innerHTML = html; $('#modal').hidden = false;
+    $('#modalCard').querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModal));
+  }
+  function closeModal() { $('#modal').hidden = true; $('#modalCard').innerHTML = ''; }
+  function paywall(breed) {
+    openModal(`
+      <div class="grab"></div>
+      <div style="width:52px;height:52px;border-radius:16px;background:rgba(249,115,22,.15);color:var(--coral);display:grid;place-items:center">${icon('lock')}</div>
+      <h3>${esc(breed)} es parte de Premium</h3>
+      <p>La versión Demo incluye solo el Poodle. Con Premium desbloqueas todas las razas, sus fichas de corte y el carnet completo.</p>
+      <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--bg)">
+        <div><b style="font-size:15px">Primer mes</b><div class="fine">Luego $2.99 al mes</div></div>
+        <div style="font-size:28px;font-weight:800" class="tnum">$0.99</div>
+      </div>
+      <button class="btn btn-primary btn-block" id="pwBuy">${icon('crown')}Activar oferta</button>
+      <button class="btn btn-ghost btn-block" id="pwPlans">Ver todos los planes</button>
+      <p class="fine" style="text-align:center">Compra simulada: no se realiza ningún cobro.</p>`);
+    $('#pwBuy').addEventListener('click', () => { closeModal(); buy(); });
+    $('#pwPlans').addEventListener('click', () => { closeModal(); setTab('premium'); });
+  }
+  function buy() {
+    if (state.premium) { toast('Ya tienes Premium activo (modo demostración).'); return; }
+    state.premium = true; save(); renderBreeds(); renderPremium();
+    toast('Premium activado en modo demostración. No se realizó ningún cobro.');
+  }
+
+  /* ── Premium ── */
+  function renderPremium() {
+    $('#buyLabel').textContent = state.premium ? 'Premium activo (demo)' : 'Activar oferta';
+    $('#planDemo').classList.toggle('cur', !state.premium);
+  }
+
+  /* ── Mapa ── */
+  function openMap() {
+    if (!mapReady) {
+      mapReady = true;
+      GVMap.init({ onPick: (id, fromPin) => pickPlace(id, fromPin) });
+      GVMap.setOrigin(DEFAULT_CENTER, false);
+      renderPlaces();
+      $('#mapFilters').querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => {
+        $('#mapFilters').querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === ch));
+        mapFilter = ch.dataset.f; GVMap.setFilter(mapFilter); renderPlaces();
+      }));
+      $('#mapLocate').addEventListener('click', () => locate(true));
+    } else GVMap.render();
+    if (!gpsTried) locate(false);
+  }
+  let mapFilter = 'all', openPlace = null;
+  function setGps(live, text) { const g = $('#gpsStatus'); g.classList.toggle('live', live); g.querySelector('span').textContent = text; }
+  function locate(user) {
+    gpsTried = true;
+    if (!('geolocation' in navigator)) { setGps(false, DEFAULT_CENTER.label); return; }
+    setGps(false, 'Buscando tu ubicación…');
+    let done = false;
+    const fail = () => { if (done) return; done = true; setGps(false, DEFAULT_CENTER.label); if (user) toast('No se pudo leer el GPS. Se usa una ubicación de ejemplo.'); if (GVMap.hasMe()) return; GVMap.recenter(); };
+    const timer = setTimeout(fail, 9000);
+    try {
+      navigator.geolocation.getCurrentPosition(pos => {
+        if (done) return; done = true; clearTimeout(timer);
+        const o = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        GVMap.setOrigin(o, true, pos.coords.accuracy); renderPlaces();
+        setGps(true, `GPS activo · precisión ±${Math.round(pos.coords.accuracy)} m`);
+      }, () => { clearTimeout(timer); fail(); }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+    } catch (e) { clearTimeout(timer); fail(); }
+  }
+  const fmtDist = m => m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1).replace('.', ',')} km`;
+  function openStatus(p) {
+    const d = new Date(), h = d.getHours() + d.getMinutes() / 60;
+    if (p.open[0] === 0 && p.open[1] === 24) return '<span class="open">Abierto las 24 horas</span>';
+    return h >= p.open[0] && h < p.open[1] ? `<span class="open">Abierto</span> · cierra a las ${p.open[1]}:00` : `<span class="closed">Cerrado</span> · abre a las ${p.open[0]}:00`;
+  }
+  function renderPlaces() {
+    const ps = GVMap.places().filter(p => mapFilter === 'all' || p.type === mapFilter)
+      .sort((a, b) => ((b.sp ? 1 : 0) - (a.sp ? 1 : 0)) || (a.dist - b.dist));
+    const typeName = { vet: 'Clínica veterinaria', groom: 'Estética canina' };
+    $('#placeList').innerHTML = `
+      <button class="biz" id="bizBtn">${icon('store')}<div><b>¿Tienes una clínica o peluquería?</b><span>Aparece destacado en el mapa por $9.99 al mes</span></div></button>` +
+      ps.map(p => `
+      <div class="place ${p.sp ? 'sp' : ''} ${p.id === openPlace ? 'sel' : ''}" data-id="${p.id}">
+        <button class="p-top" data-pick="${p.id}" style="text-align:left;width:100%">
+          <span class="p-ico" style="background:${p.sp ? '#F97316' : p.type === 'vet' ? '#0D9488' : '#2563EB'}">${icon(p.type === 'vet' ? 'cross' : 'scissors')}</span>
+          <span class="p-main">
+            <b>${p.sp ? `<span class="sp-badge">${icon('star')}Destacado</span>` : ''}${esc(p.name)}</b>
+            <span class="sub">${typeName[p.type]} · ★ ${p.rating.toFixed(1).replace('.', ',')} (${p.reviews})</span><br>
+            <span class="sub">${openStatus(p)}</span>
+          </span>
+          <span class="p-dist tnum">${fmtDist(p.dist)}</span>
+        </button>
+        <div class="p-more" ${p.id === openPlace ? '' : 'hidden'}>
+          <div class="svc">${p.services.map(s => `<span>${esc(s)}</span>`).join('')}</div>
+          <div class="p-actions">
+            <a href="https://www.google.com/maps/dir/?api=1&destination=${p.lat.toFixed(6)},${p.lng.toFixed(6)}" target="_blank" rel="noopener">${icon('nav')}Cómo llegar</a>
+            <button data-book="${p.id}">${icon('cal')}Agendar cita</button>
+          </div>
+          ${p.sp ? '<span class="ad">Patrocinado: esta clínica paga por aparecer destacada.</span>' : ''}
+        </div>
+      </div>`).join('') +
+      `<p class="demo-note">Lugares de demostración generados alrededor de ${GVMap.hasMe() ? 'tu ubicación' : 'la ubicación de ejemplo'}.</p>`;
+    $('#bizBtn').addEventListener('click', () => { setTab('premium'); setTimeout(() => $('#clinicPlan').scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); });
+    $('#placeList').querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => pickPlace(b.dataset.pick, false)));
+    $('#placeList').querySelectorAll('[data-book]').forEach(b => b.addEventListener('click', () => {
+      const p = GVMap.places().find(x => x.id === b.dataset.book);
+      toast(`Solicitud de cita enviada a ${p.name} (demostración).`);
+    }));
+  }
+  function pickPlace(id, fromPin) {
+    openPlace = openPlace === id && !fromPin ? null : id;
+    GVMap.select(openPlace); renderPlaces();
+    if (openPlace) { const el = $(`.place[data-id="${id}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+  }
+
+  function refresh() { renderAlerts(); renderCarnet(); if (state.zone) openZone(state.zone); }
+
+  function init() {
+    const ok = GV3D.init({ onSelect: openZone });
+    renderBreeds(); renderAlerts(); renderCarnet(); renderPremium();
+    document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+    $('#alertBanner').addEventListener('click', () => setTab('carnet'));
+    $('#bellBtn').addEventListener('click', () => setTab('carnet'));
+    $('#zsClose').addEventListener('click', closeZone);
+    $('#btnRotate').addEventListener('click', () => { const on = GV3D.toggleAuto(); $('#btnRotate').classList.toggle('on', on); });
+    $('#btnZoom').addEventListener('click', () => GV3D.toggleZoom());
+    $('#btnReset').addEventListener('click', () => { closeZone(); GV3D.reset(); });
+    $('#addCondBtn').addEventListener('click', addCondition);
+    $('#buyOffer').addEventListener('click', buy);
+    $('#seeMapBtn').addEventListener('click', () => setTab('mapa'));
+    $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal(); else if (state.zone) closeZone(); } });
+    const h = (location.hash || '').replace('#', '');
+    setTab(h || 'visor');
+    if (!ok) $('#hint').hidden = true;
+    // PWA: el service worker solo se registra en la versión publicada con manifest (no dentro de la vista previa).
+    if ('serviceWorker' in navigator && document.querySelector('link[rel="manifest"]')) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  }
+  return { init };
+})();
+
+App.init();
+</script>
+
+</body>
+</html>
